@@ -1,0 +1,61 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checa o código do repositório
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Configura Java 21
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 21
+
+      # 3️⃣ Instala Android SDK
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v2
+        with:
+          api-level: 34
+          build-tools: 34.0.0
+          ndk: 25
+          cache: gradle
+
+      # 4️⃣ Aceita as licenças do SDK
+      - name: Accept SDK licenses
+        run: yes | sdkmanager --licenses
+
+      # 5️⃣ Limpa e constrói o projeto
+      - name: Build APK
+        run: ./gradlew clean assembleDebug
+
+      # 6️⃣ Salva o APK como artefato do workflow
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: AgoraVaiProMax-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+
+      # 7️⃣ (Opcional) Gerar QR code para o APK
+      - name: Generate QR code
+        run: |
+          sudo apt-get update && sudo apt-get install -y qrencode
+          qrencode -o apk-qrcode.png -t PNG "https://github.com/${{ github.repository }}/releases/latest/download/AgoraVaiProMax-debug.apk"
+
+      # 8️⃣ Salva QR code como artefato
+      - name: Upload QR code
+        uses: actions/upload-artifact@v3
+        with:
+          name: apk-qrcode
+          path: apk-qrcode.png
